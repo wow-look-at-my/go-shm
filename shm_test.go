@@ -1,43 +1,35 @@
 package shm
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"testing"
+
+	"github.com/wow-look-at-my/testify/assert"
+	"github.com/wow-look-at-my/testify/require"
 )
 
 func TestCreateAndClose(t *testing.T) {
 	seg, err := Create("test-create", 4096)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer seg.Unlink()
 
-	if seg.Name() != "test-create" {
-		t.Errorf("Name() = %q, want %q", seg.Name(), "test-create")
-	}
-	if seg.Size() != 4096 {
-		t.Errorf("Size() = %d, want 4096", seg.Size())
-	}
-	if len(seg.Data()) != 4096 {
-		t.Errorf("len(Data()) = %d, want 4096", len(seg.Data()))
-	}
+	assert.Equal(t, "test-create", seg.Name())
+	assert.Equal(t, 4096, seg.Size())
+	assert.Equal(t, 4096, len(seg.Data()))
 
-	if err := seg.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if err := seg.Close(); err != ErrClosed {
-		t.Errorf("double Close() = %v, want ErrClosed", err)
-	}
+	require.NoError(t, seg.Close())
+
+	err = seg.Close()
+	assert.Equal(t, ErrClosed, err)
 }
 
 func TestReadWrite(t *testing.T) {
 	seg, err := Create("test-rw", 1024)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer func() {
 		seg.Close()
 		seg.Unlink()
@@ -45,164 +37,125 @@ func TestReadWrite(t *testing.T) {
 
 	message := []byte("hello shared memory")
 	n, err := seg.Write(message, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != len(message) {
-		t.Errorf("Write returned %d, want %d", n, len(message))
-	}
+	require.Nil(t, err)
+	assert.Equal(t, len(message), n)
 
 	buf := make([]byte, len(message))
 	n, err = seg.Read(buf, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != len(message) {
-		t.Errorf("Read returned %d, want %d", n, len(message))
-	}
-	if !bytes.Equal(buf, message) {
-		t.Errorf("Read = %q, want %q", buf, message)
-	}
+	require.Nil(t, err)
+	assert.Equal(t, len(message), n)
+	assert.Equal(t, message, buf)
 }
 
 func TestWriteAtOffset(t *testing.T) {
 	seg, err := Create("test-offset", 256)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer func() {
 		seg.Close()
 		seg.Unlink()
 	}()
 
 	_, err = seg.Write([]byte("AAAA"), 100)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
 
 	buf := make([]byte, 4)
 	_, err = seg.Read(buf, 100)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(buf) != "AAAA" {
-		t.Errorf("Read at offset = %q, want %q", buf, "AAAA")
-	}
+	require.Nil(t, err)
+	assert.Equal(t, "AAAA", string(buf))
 }
 
 func TestBoundsChecking(t *testing.T) {
 	seg, err := Create("test-bounds", 64)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer func() {
 		seg.Close()
 		seg.Unlink()
 	}()
 
-	if _, err := seg.Read(make([]byte, 1), -1); err != ErrOutOfBounds {
-		t.Errorf("Read at -1 = %v, want ErrOutOfBounds", err)
-	}
-	if _, err := seg.Read(make([]byte, 1), 64); err != ErrOutOfBounds {
-		t.Errorf("Read at 64 = %v, want ErrOutOfBounds", err)
-	}
-	if _, err := seg.Write([]byte{1}, -1); err != ErrOutOfBounds {
-		t.Errorf("Write at -1 = %v, want ErrOutOfBounds", err)
-	}
-	if _, err := seg.Write([]byte{1}, 64); err != ErrOutOfBounds {
-		t.Errorf("Write at 64 = %v, want ErrOutOfBounds", err)
-	}
+	_, err = seg.Read(make([]byte, 1), -1)
+	assert.Equal(t, ErrOutOfBounds, err)
+
+	_, err = seg.Read(make([]byte, 1), 64)
+	assert.Equal(t, ErrOutOfBounds, err)
+
+	_, err = seg.Write([]byte{1}, -1)
+	assert.Equal(t, ErrOutOfBounds, err)
+
+	_, err = seg.Write([]byte{1}, 64)
+	assert.Equal(t, ErrOutOfBounds, err)
 
 	// Write that extends beyond the end should be truncated.
 	n, err := seg.Write(make([]byte, 100), 32)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != 32 {
-		t.Errorf("truncated Write = %d, want 32", n)
-	}
+	require.Nil(t, err)
+	assert.Equal(t, 32, n)
 }
 
 func TestClosedOperations(t *testing.T) {
 	seg, err := Create("test-closed", 64)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer seg.Unlink()
 	seg.Close()
 
-	if _, err := seg.Read(make([]byte, 1), 0); err != ErrClosed {
-		t.Errorf("Read on closed = %v, want ErrClosed", err)
-	}
-	if _, err := seg.Write([]byte{1}, 0); err != ErrClosed {
-		t.Errorf("Write on closed = %v, want ErrClosed", err)
-	}
+	_, err = seg.Read(make([]byte, 1), 0)
+	assert.Equal(t, ErrClosed, err)
+
+	_, err = seg.Write([]byte{1}, 0)
+	assert.Equal(t, ErrClosed, err)
 }
 
 func TestValidation(t *testing.T) {
-	if _, err := Create("", 1024); err != ErrInvalidName {
-		t.Errorf("Create empty name = %v, want ErrInvalidName", err)
-	}
-	if _, err := Create("test", 0); err != ErrInvalidSize {
-		t.Errorf("Create zero size = %v, want ErrInvalidSize", err)
-	}
-	if _, err := Create("test", -1); err != ErrInvalidSize {
-		t.Errorf("Create negative size = %v, want ErrInvalidSize", err)
-	}
-	if _, err := Open(""); err != ErrInvalidName {
-		t.Errorf("Open empty name = %v, want ErrInvalidName", err)
-	}
+	_, err := Create("", 1024)
+	assert.Equal(t, ErrInvalidName, err)
+
+	_, err = Create("test", 0)
+	assert.Equal(t, ErrInvalidSize, err)
+
+	_, err = Create("test", -1)
+	assert.Equal(t, ErrInvalidSize, err)
+
+	_, err = Open("")
+	assert.Equal(t, ErrInvalidName, err)
 }
 
 func TestOpenExisting(t *testing.T) {
 	seg1, err := Create("test-open", 512)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer func() {
 		seg1.Close()
 		seg1.Unlink()
 	}()
 
 	_, err = seg1.Write([]byte("shared data"), 0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
 
 	seg2, err := Open("test-open")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer seg2.Close()
 
 	buf := make([]byte, 11)
 	_, err = seg2.Read(buf, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(buf) != "shared data" {
-		t.Errorf("Read from opened segment = %q, want %q", buf, "shared data")
-	}
-
-	if seg2.Size() != 512 {
-		t.Errorf("opened Size() = %d, want 512", seg2.Size())
-	}
+	require.Nil(t, err)
+	assert.Equal(t, "shared data", string(buf))
+	assert.Equal(t, 512, seg2.Size())
 }
 
 func TestDataSliceSharing(t *testing.T) {
 	seg1, err := Create("test-sharing", 256)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer func() {
 		seg1.Close()
 		seg1.Unlink()
 	}()
 
 	seg2, err := Open("test-sharing")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer seg2.Close()
 
 	// Write through seg1's Data slice.
@@ -210,16 +163,12 @@ func TestDataSliceSharing(t *testing.T) {
 
 	// Read through seg2's Data slice.
 	got := string(seg2.Data()[:12])
-	if got != "direct write" {
-		t.Errorf("cross-segment Data() = %q, want %q", got, "direct write")
-	}
+	assert.Equal(t, "direct write", got)
 }
 
 func TestOpenNonExistent(t *testing.T) {
 	_, err := Open("does-not-exist-shm-segment")
-	if err == nil {
-		t.Error("Open non-existent should return error")
-	}
+	assert.NotNil(t, err)
 }
 
 // TestCrossProcess verifies that shared memory works across OS processes.
@@ -231,18 +180,16 @@ func TestCrossProcess(t *testing.T) {
 	}
 
 	seg, err := Create("test-xproc", 4096)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
+
 	defer func() {
 		seg.Close()
 		seg.Unlink()
 	}()
 
 	secret := []byte("cross-process-works!")
-	if _, err := seg.Write(secret, 0); err != nil {
-		t.Fatal(err)
-	}
+	_, err = seg.Write(secret, 0)
+	require.Nil(t, err)
 
 	cmd := exec.Command(os.Args[0], "-test.run=^TestCrossProcess$", "-test.v")
 	cmd.Env = append(os.Environ(), "SHM_TEST_CHILD=1",
@@ -260,17 +207,12 @@ func crossProcessChild(t *testing.T) {
 	expect := os.Getenv("SHM_TEST_EXPECT")
 
 	seg, err := Open(name)
-	if err != nil {
-		t.Fatalf("child: Open(%q) failed: %v", name, err)
-	}
+	require.Nil(t, err)
+
 	defer seg.Close()
 
 	buf := make([]byte, len(expect))
-	if _, err := seg.Read(buf, 0); err != nil {
-		t.Fatalf("child: Read failed: %v", err)
-	}
-
-	if string(buf) != expect {
-		t.Fatalf("child: got %q, want %q", buf, expect)
-	}
+	_, err = seg.Read(buf, 0)
+	require.Nil(t, err)
+	require.Equal(t, expect, string(buf))
 }
