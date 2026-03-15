@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            asset: go-toolchain_linux_amd64
+          - os: macos-latest
+            asset: go-toolchain_darwin_arm64
+          - os: windows-latest
+            asset: go-toolchain_windows_amd64.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install go-toolchain (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          gh release download --repo wow-look-at-my/go-toolchain --pattern "${{ matrix.asset }}" --dir /usr/local/bin --clobber
+          mv /usr/local/bin/${{ matrix.asset }} /usr/local/bin/go-toolchain
+          chmod +x /usr/local/bin/go-toolchain
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install go-toolchain (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          gh release download --repo wow-look-at-my/go-toolchain --pattern "${{ matrix.asset }}" --dir "$env:USERPROFILE\.local\bin" --clobber
+          Rename-Item "$env:USERPROFILE\.local\bin\${{ matrix.asset }}" "go-toolchain.exe"
+          echo "$env:USERPROFILE\.local\bin" | Out-File -Append $env:GITHUB_PATH
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and test
+        run: go-toolchain
