@@ -196,10 +196,9 @@ func TestCrossProcess(t *testing.T) {
 		fmt.Sprintf("SHM_TEST_NAME=%s", "test-xproc"),
 		fmt.Sprintf("SHM_TEST_EXPECT=%s", secret),
 	)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("child process failed: %v\noutput:\n%s", err, out)
-	}
+	_, err = cmd.CombinedOutput()
+	require.Nil(t, err)
+
 }
 
 func crossProcessChild(t *testing.T) {
