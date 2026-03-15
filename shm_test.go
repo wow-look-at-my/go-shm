@@ -171,6 +171,26 @@ func TestOpenNonExistent(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestUnlink(t *testing.T) {
+	seg, err := Create("test-unlink", 128)
+	require.Nil(t, err)
+
+	require.Nil(t, seg.Unlink())
+
+	// After unlink, Open should fail.
+	_, err = Open("test-unlink")
+	assert.NotNil(t, err)
+
+	// Close should still work on the creator.
+	require.Nil(t, seg.Close())
+}
+
+func TestCreateInvalidPath(t *testing.T) {
+	// Name with path separator should fail on create (invalid path component).
+	_, err := Create("no/slashes/allowed", 64)
+	assert.NotNil(t, err)
+}
+
 // TestCrossProcess verifies that shared memory works across OS processes.
 // It spawns a child process that reads from a segment created by the parent.
 func TestCrossProcess(t *testing.T) {
