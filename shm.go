@@ -7,7 +7,10 @@
 // Supported platforms: Linux, macOS (Darwin), Windows.
 package shm
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 // Errors returned by shared memory operations.
 var (
@@ -71,8 +74,8 @@ func (s *SharedMemory) Write(data []byte, offset int64) (int, error) {
 }
 
 func validateArgs(name string, size int) error {
-	if name == "" {
-		return ErrInvalidName
+	if err := validateName(name); err != nil {
+		return err
 	}
 	if size <= 0 {
 		return ErrInvalidSize
@@ -84,5 +87,9 @@ func validateName(name string) error {
 	if name == "" {
 		return ErrInvalidName
 	}
+	if strings.ContainsAny(name, "/\\") {
+		return ErrInvalidName
+	}
 	return nil
 }
+

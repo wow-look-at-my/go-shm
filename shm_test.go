@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"testing"
 
 	"github.com/wow-look-at-my/testify/assert"
@@ -171,7 +172,28 @@ func TestOpenNonExistent(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestOpenZeroSize(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("zero-size backing file not applicable on Windows")
+	}
+
+	// Create a zero-length file at the shm path to trigger the zero-size guard.
+	name := "test-zero-size"
+	f, err := os.Create("/dev/shm/go-shm-" + name)
+	require.Nil(t, err)
+	f.Close()
+
+	defer os.Remove("/dev/shm/go-shm-" + name)
+
+	_, err = Open(name)
+	assert.NotNil(t, err)
+}
+
 func TestUnlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unlink is a no-op on Windows; named mappings are removed when all handles close")
+	}
+
 	seg, err := Create("test-unlink", 128)
 	require.Nil(t, err)
 
@@ -186,9 +208,17 @@ func TestUnlink(t *testing.T) {
 }
 
 func TestCreateInvalidPath(t *testing.T) {
-	// Name with path separator should fail on create (invalid path component).
+	// Name with path separator should fail on create.
 	_, err := Create("no/slashes/allowed", 64)
-	assert.NotNil(t, err)
+	assert.Equal(t, ErrInvalidName, err)
+
+	// Backslash is also rejected.
+	_, err = Create("no\\backslash", 64)
+	assert.Equal(t, ErrInvalidName, err)
+
+	// Open rejects slashes too.
+	_, err = Open("no/slashes")
+	assert.Equal(t, ErrInvalidName, err)
 }
 
 // TestCrossProcess verifies that shared memory works across OS processes.
