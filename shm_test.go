@@ -179,11 +179,12 @@ func TestOpenZeroSize(t *testing.T) {
 
 	// Create a zero-length file at the shm path to trigger the zero-size guard.
 	name := "test-zero-size"
-	f, err := os.Create("/dev/shm/go-shm-" + name)
+	path := shmPath(name)
+	f, err := os.Create(path)
 	require.Nil(t, err)
 	f.Close()
 
-	defer os.Remove("/dev/shm/go-shm-" + name)
+	defer os.Remove(path)
 
 	_, err = Open(name)
 	assert.NotNil(t, err)
