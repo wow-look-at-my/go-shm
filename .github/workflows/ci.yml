@@ -3,24 +3,13 @@ name: CI
 on:
   push:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   test:
-    strategy:
-      matrix:
-        include:
-          - runner: ubuntu-latest
-            os: linux
-            arch: amd64
-          - runner: macos-latest
-            os: darwin
-            arch: arm64
-          - runner: windows-latest
-            os: windows
-            arch: amd64
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: wow-look-at-my/go-toolchain@v1
-        with:
-          os: ${{ matrix.os }}
-          arch: ${{ matrix.arch }}

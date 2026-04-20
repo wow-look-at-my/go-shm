@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"os"
 	"syscall"
+
+	"github.com/wow-look-at-my/go-mmap"
 )
 
 // platformHandle holds Unix-specific resources for a shared memory segment.
 type platformHandle struct {
 	fd   int
 	path string
+	mm   mmap.MMap
 }
 
 // Create allocates a new shared memory segment with the given name and size.
@@ -35,7 +38,7 @@ func Create(name string, size int) (*SharedMemory, error) {
 		return nil, fmt.Errorf("shm: truncate %q: %w", name, err)
 	}
 
-	data, err := syscall.Mmap(fd, 0, size, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	mm, err := mmap.MapRegion(fd, size, mmap.ProtRead|mmap.ProtWrite, mmap.MapShared, 0)
 	if err != nil {
 		syscall.Close(fd)
 		os.Remove(path)
@@ -45,10 +48,11 @@ func Create(name string, size int) (*SharedMemory, error) {
 	return &SharedMemory{
 		name: name,
 		size: size,
-		data: data,
+		data: []byte(mm),
 		handle: platformHandle{
 			fd:   fd,
 			path: path,
+			mm:   mm,
 		},
 	}, nil
 }
@@ -78,7 +82,7 @@ func Open(name string) (*SharedMemory, error) {
 		return nil, fmt.Errorf("shm: %q has zero size", name)
 	}
 
-	data, err := syscall.Mmap(fd, 0, size, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	mm, err := mmap.MapRegion(fd, size, mmap.ProtRead|mmap.ProtWrite, mmap.MapShared, 0)
 	if err != nil {
 		syscall.Close(fd)
 		return nil, fmt.Errorf("shm: mmap %q: %w", name, err)
@@ -87,10 +91,11 @@ func Open(name string) (*SharedMemory, error) {
 	return &SharedMemory{
 		name: name,
 		size: size,
-		data: data,
+		data: []byte(mm),
 		handle: platformHandle{
 			fd:   fd,
 			path: path,
+			mm:   mm,
 		},
 	}, nil
 }
@@ -104,7 +109,7 @@ func (s *SharedMemory) Close() error {
 	s.closed = true
 
 	var firstErr error
-	if err := syscall.Munmap(s.data); err != nil {
+	if err := s.handle.mm.Unmap(); err != nil {
 		firstErr = fmt.Errorf("shm: munmap: %w", err)
 	}
 	s.data = nil
