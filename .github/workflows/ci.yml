@@ -7,9 +7,6 @@ permissions:
   id-token: write
   contents: read
 
-env:
-  GO_TOOLCHAIN_CACHING_INTENTIONALLY_NOT_CONFIGURED: "1"
-
 jobs:
   test:
     runs-on: ubuntu-latest
