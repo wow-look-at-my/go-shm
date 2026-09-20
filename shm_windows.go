@@ -114,7 +114,6 @@ func Open(name string) (*SharedMemory, error) {
 		return nil, fmt.Errorf("shm: open %q: %w", name, errno)
 	}
 
-	// Map the entire section (size 0 = map all).
 	addr, _, errno := syscall.SyscallN(procMapViewOfFile.Addr(),
 		h, fileMapAllAccess, 0, 0, 0,
 	)

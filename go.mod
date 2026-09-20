@@ -4,7 +4,7 @@ go 1.24.7
 
 require (
 	github.com/stretchr/testify v1.11.1
-	github.com/wow-look-at-my/go-mmap v0.0.0-20260325005430-e0b07e8881c8
+	github.com/wow-look-at-my/go-mmap v0.0.0 // go-toolchain:auto-branch
 )
 
 require (
