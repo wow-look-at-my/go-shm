@@ -14,7 +14,11 @@ permissions:
 
 jobs:
   test:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    # bwrap cannot mount proc on the slim runner; this one carries docker.
+    runs-on: ${{ vars.CI_RUNNER_DIND || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
       - uses: wow-look-at-my/go-toolchain@master
+        with:
+          # A library has no main package, so a release has nothing to carry.
+          autorelease: false
