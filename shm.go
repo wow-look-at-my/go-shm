@@ -1,8 +1,7 @@
 // Package shm provides cross-platform shared memory for interprocess communication.
 //
 // Shared memory segments are identified by name and can be accessed by multiple
-// processes simultaneously. Use Create to allocate a new segment, and Open to
-// attach to an existing one.
+// processes simultaneously.
 //
 // Supported platforms: Linux, macOS (Darwin), Windows.
 package shm

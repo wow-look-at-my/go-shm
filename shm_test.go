@@ -177,7 +177,6 @@ func TestOpenZeroSize(t *testing.T) {
 		t.Skip("zero-size backing file not applicable on Windows")
 	}
 
-	// Create a zero-length file at the shm path to trigger the zero-size guard.
 	name := "test-zero-size"
 	path := shmPath(name)
 	f, err := os.Create(path)
