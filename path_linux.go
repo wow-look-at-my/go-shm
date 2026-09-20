@@ -1,6 +1,5 @@
 //go:build !cosmo
 
-
 package shm
 
 import "path/filepath"
