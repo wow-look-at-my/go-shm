@@ -18,6 +18,10 @@ jobs:
     runs-on: ${{ vars.CI_RUNNER_DIND || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
+      # The fleet ships no Go, which go-toolchain needs to install generators.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
       - uses: wow-look-at-my/go-toolchain@master
         with:
           # A library has no main package, so a release has nothing to carry.
