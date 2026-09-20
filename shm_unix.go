@@ -38,7 +38,7 @@ func Create(name string, size int) (*SharedMemory, error) {
 		return nil, fmt.Errorf("shm: truncate %q: %w", name, err)
 	}
 
-	mm, err := mmap.MapRegion(fd, size, mmap.ProtRead|mmap.ProtWrite, mmap.MapShared, 0)
+	mm, err := mmap.MapRegion(fd, int64(size), mmap.ProtRead|mmap.ProtWrite, mmap.MapShared, 0)
 	if err != nil {
 		syscall.Close(fd)
 		os.Remove(path)
@@ -82,7 +82,7 @@ func Open(name string) (*SharedMemory, error) {
 		return nil, fmt.Errorf("shm: %q has zero size", name)
 	}
 
-	mm, err := mmap.MapRegion(fd, size, mmap.ProtRead|mmap.ProtWrite, mmap.MapShared, 0)
+	mm, err := mmap.MapRegion(fd, int64(size), mmap.ProtRead|mmap.ProtWrite, mmap.MapShared, 0)
 	if err != nil {
 		syscall.Close(fd)
 		return nil, fmt.Errorf("shm: mmap %q: %w", name, err)
