@@ -1,6 +1,7 @@
 package shm
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,9 +12,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// created reports whether a Create or Open call succeeded. Where the platform
+// has no shared memory, the call must fail with errors.ErrUnsupported.
+func created(t *testing.T, err error) bool {
+	t.Helper()
+	if !supported {
+		require.ErrorIs(t, err, errors.ErrUnsupported)
+		return false
+	}
+	require.NoError(t, err)
+	return true
+}
+
 func TestCreateAndClose(t *testing.T) {
 	seg, err := Create("test-create", 4096)
-	require.Nil(t, err)
+	if !created(t, err) {
+		return
+	}
 
 	defer seg.Unlink()
 
@@ -29,7 +44,9 @@ func TestCreateAndClose(t *testing.T) {
 
 func TestReadWrite(t *testing.T) {
 	seg, err := Create("test-rw", 1024)
-	require.Nil(t, err)
+	if !created(t, err) {
+		return
+	}
 
 	defer func() {
 		seg.Close()
@@ -50,7 +67,9 @@ func TestReadWrite(t *testing.T) {
 
 func TestWriteAtOffset(t *testing.T) {
 	seg, err := Create("test-offset", 256)
-	require.Nil(t, err)
+	if !created(t, err) {
+		return
+	}
 
 	defer func() {
 		seg.Close()
@@ -68,7 +87,9 @@ func TestWriteAtOffset(t *testing.T) {
 
 func TestBoundsChecking(t *testing.T) {
 	seg, err := Create("test-bounds", 64)
-	require.Nil(t, err)
+	if !created(t, err) {
+		return
+	}
 
 	defer func() {
 		seg.Close()
@@ -95,7 +116,9 @@ func TestBoundsChecking(t *testing.T) {
 
 func TestClosedOperations(t *testing.T) {
 	seg, err := Create("test-closed", 64)
-	require.Nil(t, err)
+	if !created(t, err) {
+		return
+	}
 
 	defer seg.Unlink()
 	seg.Close()
@@ -123,7 +146,9 @@ func TestValidation(t *testing.T) {
 
 func TestOpenExisting(t *testing.T) {
 	seg1, err := Create("test-open", 512)
-	require.Nil(t, err)
+	if !created(t, err) {
+		return
+	}
 
 	defer func() {
 		seg1.Close()
@@ -147,7 +172,9 @@ func TestOpenExisting(t *testing.T) {
 
 func TestDataSliceSharing(t *testing.T) {
 	seg1, err := Create("test-sharing", 256)
-	require.Nil(t, err)
+	if !created(t, err) {
+		return
+	}
 
 	defer func() {
 		seg1.Close()
@@ -195,7 +222,9 @@ func TestUnlink(t *testing.T) {
 	}
 
 	seg, err := Create("test-unlink", 128)
-	require.Nil(t, err)
+	if !created(t, err) {
+		return
+	}
 
 	require.Nil(t, seg.Unlink())
 
@@ -230,7 +259,9 @@ func TestCrossProcess(t *testing.T) {
 	}
 
 	seg, err := Create("test-xproc", 4096)
-	require.Nil(t, err)
+	if !created(t, err) {
+		return
+	}
 
 	defer func() {
 		seg.Close()

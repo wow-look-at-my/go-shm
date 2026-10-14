@@ -10,6 +10,9 @@ import (
 	"unsafe"
 )
 
+// supported reports whether this platform has shared memory.
+const supported = true
+
 // platformHandle holds Windows-specific resources for a shared memory segment.
 type platformHandle struct {
 	mapHandle syscall.Handle

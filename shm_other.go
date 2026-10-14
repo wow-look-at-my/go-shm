@@ -7,6 +7,9 @@ import "errors"
 // This platform has no shared memory. Every call fails, so a caller runs without it.
 type platformHandle struct{}
 
+// supported reports whether this platform has shared memory.
+const supported = false
+
 // Create fails: this platform has no shared memory.
 func Create(name string, size int) (*SharedMemory, error) {
 	if err := validateArgs(name, size); err != nil {

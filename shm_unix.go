@@ -10,6 +10,9 @@ import (
 	"github.com/wow-look-at-my/go-mmap"
 )
 
+// supported reports whether this platform has shared memory.
+const supported = true
+
 // platformHandle holds Unix-specific resources for a shared memory segment.
 type platformHandle struct {
 	fd   int
