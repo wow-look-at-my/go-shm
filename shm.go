@@ -1,3 +1,5 @@
+//go:build cosmo || darwin || linux || windows
+
 // Package shm provides cross-platform shared memory for interprocess communication.
 //
 // Shared memory segments are identified by name and can be accessed by multiple
