@@ -7,6 +7,7 @@ Cross-platform shared memory library for Go, suitable for interprocess communica
 - **Linux** — memory-mapped files in `/dev/shm`
 - **macOS** — memory-mapped files in the system temp directory
 - **Windows** — named file mappings backed by the system page file
+- **WebAssembly** (`js`, `wasip1`) — heap buffers in a registry of the one process, which every `Open` of the name shares
 
 No cgo required on any platform.
 
