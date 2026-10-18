@@ -1,3 +1,7 @@
+// WebAssembly has no shared memory and no second process, so no file of this
+// package builds there.
+//go:build !js && !wasip1
+
 // Package shm provides cross-platform shared memory for interprocess communication.
 //
 // Shared memory segments are identified by name and can be accessed by multiple

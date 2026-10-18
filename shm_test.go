@@ -1,7 +1,11 @@
+//go:build !js && !wasip1
+
 package shm
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"testing"
 
@@ -223,7 +227,7 @@ func TestCreateInvalidPath(t *testing.T) {
 // It spawns a child process that reads from a segment created by the parent.
 func TestCrossProcess(t *testing.T) {
 	if os.Getenv("SHM_TEST_CHILD") == "1" {
-		crossProcessChild(t, os.Getenv("SHM_TEST_NAME"), os.Getenv("SHM_TEST_EXPECT"))
+		crossProcessChild(t)
 		return
 	}
 
@@ -235,14 +239,24 @@ func TestCrossProcess(t *testing.T) {
 		seg.Unlink()
 	}()
 
-	secret := "cross-process-works!"
-	_, err = seg.Write([]byte(secret), 0)
+	secret := []byte("cross-process-works!")
+	_, err = seg.Write(secret, 0)
 	require.Nil(t, err)
 
-	runPeer(t, "test-xproc", secret)
+	cmd := exec.Command(os.Args[0], "-test.run=^TestCrossProcess$", "-test.v")
+	cmd.Env = append(os.Environ(), "SHM_TEST_CHILD=1",
+		fmt.Sprintf("SHM_TEST_NAME=%s", "test-xproc"),
+		fmt.Sprintf("SHM_TEST_EXPECT=%s", secret),
+	)
+	_, err = cmd.CombinedOutput()
+	require.Nil(t, err)
+
 }
 
-func crossProcessChild(t *testing.T, name, expect string) {
+func crossProcessChild(t *testing.T) {
+	name := os.Getenv("SHM_TEST_NAME")
+	expect := os.Getenv("SHM_TEST_EXPECT")
+
 	seg, err := Open(name)
 	require.Nil(t, err)
 
