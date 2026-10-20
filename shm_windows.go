@@ -18,8 +18,7 @@ type platformHandle struct {
 
 const (
 	fileMapAllAccess = 0xF001F
-	// headerSize is the number of bytes reserved at the start of the mapping
-	// to store the original user-requested size as a little-endian uint64.
+	// headerSize is the number of bytes reserved at the start of the mapping to store the original user-requested size as a little-endian uint64.
 	headerSize = 8
 )
 
@@ -31,10 +30,9 @@ var (
 	procUnmapViewOfFile   = modkernel32.NewProc("UnmapViewOfFile")
 )
 
-// sliceFromAddr creates a byte slice backed by the memory at addr.
-// This must only be called with addresses returned from Windows memory-mapping syscalls.
-// We use reflect.SliceHeader to avoid a uintptr→unsafe.Pointer conversion
-// that go vet flags as "possible misuse of unsafe.Pointer".
+// sliceFromAddr creates a byte slice backed by the memory at addr. This must
+// only be called with addresses returned from Windows memory-mapping
+// syscalls.
 func sliceFromAddr(addr uintptr, size int) []byte {
 	var b []byte
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&b))
@@ -45,9 +43,8 @@ func sliceFromAddr(addr uintptr, size int) []byte {
 }
 
 // Create allocates a new shared memory segment with the given name and size.
-// On Windows, the segment is backed by the system page file using named file mappings.
-// An 8-byte header stores the original size so that Open can recover it exactly
-// (VirtualQuery only returns page-rounded sizes).
+// On Windows, the segment is backed by the system page file using named file
+// mappings.
 func Create(name string, size int) (*SharedMemory, error) {
 	if err := validateArgs(name, size); err != nil {
 		return nil, err

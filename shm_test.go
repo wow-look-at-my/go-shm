@@ -1,4 +1,4 @@
-//go:build cosmo || darwin || linux || windows
+//go:build !js && !wasip1
 
 package shm
 
