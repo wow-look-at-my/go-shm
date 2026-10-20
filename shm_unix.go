@@ -120,9 +120,7 @@ func (s *SharedMemory) Close() error {
 	return firstErr
 }
 
-// Unlink removes the shared memory segment's backing file. After unlinking,
-// no new processes can Open the segment, but existing mappings remain valid
-// until closed.
+// Unlink removes the shared memory segment's backing file.
 func (s *SharedMemory) Unlink() error {
 	return os.Remove(s.handle.path)
 }

@@ -43,9 +43,8 @@ func (s *SharedMemory) Size() int {
 	return s.size
 }
 
-// Data returns a direct reference to the shared memory region as a byte slice.
-// Modifications to this slice are visible to all processes attached to the segment.
-// The slice must not be used after Close is called.
+// Data returns a direct reference to the shared memory region as a byte
+// slice.
 func (s *SharedMemory) Data() []byte {
 	return s.data
 }
